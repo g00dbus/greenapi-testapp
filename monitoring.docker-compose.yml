@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.fap.pw`)"
+      - "traefik.http.routers.grafana.entrypoints=https"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-configs:/etc/grafana
+
+  prometheus:
+    container_name: prometheus
+    image: bitnami/prometheus
+    command:
+    - "--config.file=/etc/prometheus/prometheus.yml"
+    - "--web.config.file=/etc/prometheus/web.yml"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.fap.pw`)"
+      - "traefik.http.routers.prometheus.entrypoints=https"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - prometheus-configs:/etc/prometheus
+
+  node-exporter:
+    container_name: node-exporter
+    image: bitnami/node-exporter
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.node-exporter.rule=Host(`ne.fap.pw`)"
+      - "traefik.http.routers.node-exporter.entrypoints=https"
+      - "traefik.http.services.node-exporter.loadbalancer.server.port=9100"
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - prometheus-configs:/etc/prometheus
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude"
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+      - "--web.config.file=/etc/prometheus/web.yml"
+volumes:
+  grafana-data:
+  grafana-configs:
+  prometheus-data:
+  prometheus-configs:
+
+networks:
+  default:
+    name: proxy-network
+    external: true

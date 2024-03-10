@@ -1,0 +1,43 @@
+version: "2.3"
+
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:v2.11
+    command:
+     - "--api.insecure=false"
+     - "--api.dashboard=true"
+     - "--providers.docker"
+     - "--log.level=DEBUG"
+     - "--providers.docker.exposedByDefault=false"
+     - "--providers.docker.network=proxy-network"
+     #Entrypoints
+     - "--entrypoints.http.address=:80"
+     - "--entrypoints.https.address=:443"
+     #Redirect from http to https
+     - "--entrypoints.http.http.redirections.entrypoint.to=https"
+     - "--entrypoints.http.http.redirections.entrypoint.scheme=https"
+     #Let's Encrypt
+     - "--entrypoints.https.http.tls.certResolver=le"
+     - "--certificatesresolvers.le.acme.tlschallenge=true"
+     - "--certificatesresolvers.le.acme.email=admin@fap.pw"
+     - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+    labels:
+     #Secure Dashboard
+     - "traefik.enable=true"
+     - "traefik.http.routers.dashboard.rule=Host(`traefik.fap.pw`)"
+     - "traefik.http.routers.dashboard.entrypoints=https"
+     - "traefik.http.routers.dashboard.service=api@internal"
+     - "traefik.http.routers.dashboard.middlewares=auth"
+     - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$M3MtgNx6$$6Fc4985ZJagW1NXQZNNoD1"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./ssl:/letsencrypt
+
+networks:
+  default:
+    name: proxy-network
+    external: true

@@ -5,6 +5,4 @@ RUN apk add --no-cache nginx && mkdir -p /run/nginx \
 
 COPY custom.conf /etc/nginx/conf.d/
 
-COPY ./www/ /var/www/greenapi/
-
 CMD ["nginx", "-g", "daemon off;"]

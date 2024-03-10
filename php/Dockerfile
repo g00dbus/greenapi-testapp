@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:7.4-fpm
 
 EXPOSE 9000
 

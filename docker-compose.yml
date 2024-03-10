@@ -3,14 +3,16 @@ version: "2.3"
 services:
   nginx:
     container_name: greenapi-nginx
-    build: ./nginx/Dockerfile_nginx
+    build: ./nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - "81:80"
     volumes:
       - ./www:/var/www/greenapi
-      - ./certbot/www:/var/www/certbot/:ro
-      - ./certbot/conf/:/etc/nginx/ssl/:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`green.fap.pw`)"
+      - "traefik.http.routers.nginx.entrypoints=https"
+      - "traefik.http.services.nginx.loadbalancer.server.port=81"
     depends_on:
       php:
         condition: service_healthy
@@ -18,7 +20,7 @@ services:
 
   php:
     container_name: greenapi-php
-    build: ./php/Dockerfile_php
+    build: ./php
     volumes:
       - ./www:/var/www/greenapi
     healthcheck:
@@ -29,8 +31,7 @@ services:
       start_period: 1s
     restart: always
 
-  certbot:
-    image: certbot/certbot:latest
-    volumes:
-      - ./certbot/www/:/var/www/certbot/:rw
-      - ./certbot/conf/:/etc/letsencrypt/:rw
+networks:
+  default:
+    name: proxy-network
+    external: true
